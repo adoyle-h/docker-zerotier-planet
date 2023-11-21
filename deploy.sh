@@ -1,6 +1,7 @@
 #!/bin/bash
 
 imageName="zerotier-planet"
+DOCKER=nerdctl # docker or nerdctl
 
 function install() {
   read -p "请输入zerotier-planet要使用的端口号,例如9994（数字）: " port
@@ -48,13 +49,13 @@ function install() {
   echo "开始安装..."
   echo "清除原有内容"
   rm -rf /tmp/planet
-  docker stop $imageName
-  docker rm $imageName
-  docker rmi $imageName
+  $DOCKER stop $imageName
+  $DOCKER rm $imageName
+  $DOCKER rmi $imageName
 
   echo "打包镜像"
   echo "使用的端口为：${port}"
-  docker build --no-cache --build-arg ZT_PORT=$port -t $imageName .
+  $DOCKER build --no-cache --build-arg ZT_PORT=$port -t $imageName .
   if [ $? -ne 0 ]; then
     echo "镜像打包失败，请重试"
     echo "国内机器打包容易失败，请多试几次"
@@ -63,8 +64,8 @@ function install() {
 
   echo "启动服务"
   for i in $(lsof -i:$port -t); do kill -2 $i; done
-  docker run -d -p $port:$port -p $port:$port/udp -p 3443:3443 --name $imageName --restart unless-stopped $imageName
-  docker cp zerotier-planet:/app/bin/planet /tmp/planet
+  $DOCKER run -d -p $port:$port -p $port:$port/udp -p 3443:3443 --name $imageName --restart unless-stopped $imageName
+  $DOCKER cp zerotier-planet:/app/bin/planet /tmp/planet
 
   echo "planet文件路径为 /tmp/planet"
   echo "planet server端口为: $port, 请在防火墙放行该端口的tcp和udp协议"
@@ -73,8 +74,8 @@ function install() {
 
 function upgrade() {
   echo "准备更新zerotier服务"
-  docker exec $imageName sh -c "apt update && apt upgrade zerotier-one -y || apk upgrade zerotier-one"
-  docker restart $imageName
+  $DOCKER exec $imageName sh -c "apt update && apt upgrade zerotier-one -y || apk upgrade zerotier-one"
+  $DOCKER restart $imageName
   echo "done!"
 }
 
@@ -100,7 +101,7 @@ case "$choice" in
   ;;
 3)
   echo "导出planet到当前目录"
-  docker cp zerotier-planet:/app/bin/planet .
+  $DOCKER cp zerotier-planet:/app/bin/planet .
   ;;
 *)
   echo "谢谢使用！"
